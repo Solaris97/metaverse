@@ -32,14 +32,18 @@ function onKey() {
   onMove();
   onChat();
   onUserList();
+  onChangeMap();
+}
+
+function isOpenChatBox() {
+  const chatBox = document.getElementById("chat");
+  const isChatBoxShow = getComputedStyle(chatBox).display !== "none";
+  return isChatBoxShow;
 }
 
 function onMove() {
   if (isJoined === false) return;
-
-  const chatBox = document.getElementById("chat");
-  const isChatBoxShow = getComputedStyle(chatBox).display !== "none";
-  if (isChatBoxShow) return;
+  if (isOpenChatBox()) return;
 
   const keyList = Object.keys(keys);
 
@@ -64,20 +68,36 @@ function onMove() {
   const userSize = getUserHalfSize();
   const tileSize = getTileSize();
   const userHalfSize = userSize / tileSize;
-  const [userX, userY] = world.me.position;
-  const [nextX, nextY] = [userX + x, userY + y];
-  world.map.wall.forEach(([wallX, wallY]) => {
-    const leftHit =
-      Math.floor(nextX - userHalfSize) === wallX && Math.floor(nextY) === wallY;
-    const rightHit =
-      Math.floor(nextX + userHalfSize) === wallX && Math.floor(nextY) === wallY;
-    const upHit =
-      Math.floor(nextX) === wallX && Math.floor(nextY - userHalfSize) === wallY;
-    const downHit =
-      Math.floor(nextX) === wallX && Math.floor(nextY + userHalfSize) === wallY;
+  const [userX, userY] = world.me.position.map((position) => position + 0.5); // 0.5 is tile correction
 
-    if (leftHit || rightHit) x = 0;
-    if (upHit || downHit) y = 0;
+  const checkHitList = [
+    { x: 1, y: 0 }, // right
+    { x: -1, y: 0 }, // left
+    { x: 0, y: 1 }, // top
+    { x: 0, y: -1 }, // bottom
+    { x: 1, y: 1 }, // bottom right
+    { x: -1, y: -1 }, // top left
+    { x: 1, y: -1 }, // bottom left
+    { x: -1, y: 1 }, // top right
+  ];
+
+  world.map.wall.forEach(([wallX, wallY]) => {
+    if (x === 0 && y === 0) return;
+
+    checkHitList.forEach(({ x: addX, y: addY }) => {
+      if (x === 0 && y === 0) return;
+
+      const isHit =
+        Math.floor(userX + x + addX * userHalfSize) === wallX &&
+        Math.floor(userY + y + addY * userHalfSize) === wallY;
+
+      if (isHit === false) return;
+
+      if (addX === -1 && x < 0) x = 0;
+      if (addX === 1 && x > 0) x = 0;
+      if (addY === -1 && y < 0) y = 0;
+      if (addY === 1 && y > 0) y = 0;
+    });
   });
 
   world.me.position[0] += x;
@@ -127,6 +147,7 @@ function onChat() {
 
 function onUserList() {
   if (isJoined === false) return;
+  if (isOpenChatBox()) return;
 
   const keyList = Object.keys(keys);
   if (keyList.includes("tab")) {
@@ -135,5 +156,19 @@ function onUserList() {
   } else {
     const userList = document.getElementById("user-list");
     userList.style.display = "";
+  }
+}
+
+function onChangeMap() {
+  if (isJoined === false) return;
+  if (isOpenChatBox()) return;
+
+  const keyList = Object.keys(keys);
+  if (keyList.includes("m")) {
+    delete keys.m;
+
+    const mapId = prompt("input other map id");
+    if (mapId === null || mapId.trim() === "") return;
+    changeMap(mapId);
   }
 }

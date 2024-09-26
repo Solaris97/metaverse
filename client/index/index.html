@@ -10,7 +10,7 @@
     <canvas id="cvs"></canvas>
 
     <form id="join">
-      <input id="nickname" placeholder="your nickname" required />
+      <input id="nickname" placeholder="your nickname" required tabindex="0" />
       <button type="submit">JOIN</button>
     </form>
 
@@ -26,3 +26,5 @@
     <script src="./index.js"></script>
   </body>
 </html>
+<!-- TODO: 리팩토링 (index, map에서 부가적으로 쓰는 JS 중 겹치는 게 있다면, builder 느낌으로 만들어서 합쳐서 하나로 쓰기) -->
+<!-- TODO: webRTC 추가하기 -->

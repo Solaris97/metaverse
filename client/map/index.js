@@ -20,7 +20,7 @@ const world = {
   },
 };
 
-// block type (Start, Wall)
+// block type (Start, Wall, Erase)
 let blockType = "Start";
 
 // calculate fps
@@ -44,9 +44,20 @@ function init() {
 
   const blockTypeToggle = document.getElementById("button-block-type");
   blockTypeToggle.addEventListener("click", function () {
-    blockTypeToggle.textContent = blockType === "Start" ? "Wall" : "Start";
-    blockType = blockType === "Start" ? "Wall" : "Start";
+    const nextBlockType = {
+      Start: "Wall",
+      Wall: "Erase",
+      Erase: "Start",
+    };
+    blockTypeToggle.textContent = nextBlockType[blockType];
+    blockType = nextBlockType[blockType];
   });
+
+  const loadButton = document.getElementById("button-load");
+  loadButton.addEventListener("click", loadMap);
+
+  const saveButton = document.getElementById("button-save");
+  saveButton.addEventListener("click", saveMap);
 
   document
     .getElementById("input-width")
@@ -105,6 +116,62 @@ function drawCanvas() {
   onKey();
 
   requestAnimationFrame(drawCanvas);
+}
+
+function loadMap() {
+  const mapInfo = prompt("input map data (please remove white-space)");
+  if (mapInfo === null) return;
+
+  let mapObject = {};
+  try {
+    mapObject = JSON.parse(mapInfo);
+
+    const isMapObject =
+      "id" in mapObject &&
+      "size" in mapObject &&
+      "start" in mapObject &&
+      "wall" in mapObject;
+    if (isMapObject === false) throw new Error("is not map data");
+  } catch {
+    alert("is not map data");
+  }
+
+  world.map = mapObject;
+}
+
+async function saveMap() {
+  const mapId = prompt("map name (max 100)");
+  if (mapId === null) return;
+  if (mapId.trim() === "") return saveMap();
+  if (mapId.trim().length > 100) {
+    alert("map name max length is 100");
+    return saveMap();
+  }
+
+  world.map.id = mapId.trim();
+
+  // save Map
+  try {
+    const saveResponse = await fetch(`/map/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        data: world.map,
+      }),
+    });
+
+    if (saveResponse.status === 200) {
+      console.log(world.map);
+      alert("save done, press f12 and see your map raw data");
+    } else {
+      const responseText = await saveResponse.text();
+      alert(responseText);
+    }
+  } catch (error) {
+    alert("Save Error: " + JSON.stringify(error));
+  }
 }
 
 // ---------------------------------------------------------------------- [ TYPE ]
